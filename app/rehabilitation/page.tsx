@@ -37,8 +37,7 @@ export default function Rehabilitation() {
   const router = useRouter()
   const [rehabData, setRehabData] = useState({
     injuryType: "",
-    rehabPlan: "",
-    frequency: "1",
+    rehabPlan: [{ name: "", frequency: "1" }],
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [showRehabOptions, setShowRehabOptions] = useState(false)
@@ -85,44 +84,44 @@ export default function Rehabilitation() {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="rehabPlan">Rehabilitation Plan</Label>
-          <div className="relative">
-            <Input
-              placeholder="Search rehabilitation plans"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setShowRehabOptions(true)
-              }}
-              onFocus={() => setShowRehabOptions(true)}
-              className="rounded-xl py-6"
-            />
+        <div className="space-y-4">
+        <Label>Rehabilitation Plan</Label>
 
-            {showRehabOptions && searchTerm && (
-              <div className="absolute z-10 w-full mt-1 bg-white border rounded-xl shadow-lg max-h-60 overflow-auto">
-                {filteredRehabPlans.map((plan) => (
-                  <div
-                    key={plan}
-                    className="p-3 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      handleChange("rehabPlan", plan)
-                      setSearchTerm(plan)
-                      setShowRehabOptions(false)
-                    }}
-                  >
-                    {plan}
-                  </div>
+        {rehabData.rehabPlan.map((plan, index) => (
+          <div key={index} className="border p-4 rounded-xl space-y-3">
+            <div>
+              <Label>Exercise #{index + 1}</Label>
+              <Input
+                placeholder="Type or select an exercise"
+                value={plan.name}
+                onChange={(e) => {
+                  const newPlans = [...rehabData.rehabPlan]
+                  newPlans[index].name = e.target.value
+                  setRehabData((prev) => ({ ...prev, rehabPlan: newPlans }))
+                }}
+                list={`rehab-options-${index}`}
+                className="rounded-xl py-6 mt-1"
+              />
+              <datalist id={`rehab-options-${index}`}>
+                {REHAB_PLANS.filter((p) =>
+                  p.toLowerCase().includes(plan.name.toLowerCase())
+                ).map((p) => (
+                  <option key={p} value={p} />
                 ))}
-              </div>
-            )}
-          </div>
+              </datalist>
+            </div>
 
-          {rehabData.rehabPlan && (
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="frequency">How many times per day?</Label>
-              <Select defaultValue="1" onValueChange={(value) => handleChange("frequency", value)}>
-                <SelectTrigger className="rounded-xl py-6">
+            <div>
+              <Label>How many times per day?</Label>
+              <Select
+                value={plan.frequency}
+                onValueChange={(value) => {
+                  const newPlans = [...rehabData.rehabPlan]
+                  newPlans[index].frequency = value
+                  setRehabData((prev) => ({ ...prev, rehabPlan: newPlans }))
+                }}
+              >
+                <SelectTrigger className="rounded-xl py-6 mt-1">
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,8 +133,37 @@ export default function Rehabilitation() {
                 </SelectContent>
               </Select>
             </div>
-          )}
-        </div>
+
+            {rehabData.rehabPlan.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  const updated = rehabData.rehabPlan.filter((_, i) => i !== index)
+                  setRehabData((prev) => ({ ...prev, rehabPlan: updated }))
+                }}
+              >
+                Remove Exercise
+              </Button>
+            )}
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            setRehabData((prev) => ({
+              ...prev,
+              rehabPlan: [...prev.rehabPlan, { name: "", frequency: "1" }],
+            }))
+          }
+        >
+          + Add Exercise
+        </Button>
+      </div>
+
+
 
         <div className="pt-6 flex justify-end">
           <Button
