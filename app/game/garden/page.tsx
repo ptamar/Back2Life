@@ -6,6 +6,8 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Coins, Droplets, Shovel, SproutIcon as Seedling } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {  SproutIcon as  SunIcon } from "lucide-react"
+
 
 // Plant growth stages with more proportional heights
 const GROWTH_STAGES = [
@@ -41,12 +43,12 @@ const GROWTH_STAGES = [
   },
 ]
 
-// Garden tools
+// Garden tools 
 const TOOLS = [
   { id: "water", name: "Water", icon: <Droplets className="h-6 w-6" />, color: "bg-blue-400" },
-  { id: "soil", name: "Soil", icon: <Shovel className="h-6 w-6" />, color: "bg-amber-700" },
-  { id: "fertilizer", name: "Fertilizer", icon: <Seedling className="h-6 w-6" />, color: "bg-green-600" },
+  { id: "sun", name: "Sun", icon: <SunIcon className="h-6 w-6" />, color: "bg-yellow-400" },
 ]
+
 
 // Activity circles
 const ACTIVITIES = [
@@ -72,12 +74,15 @@ export default function Garden() {
   const handRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const [showExercisePopup, setShowExercisePopup] = useState(false)
+
   const router = useRouter()
 
   
   // This effect runs once after hydration
   useEffect(() => {
     setHydrated(true)
+    setShowExercisePopup(true)
   }, [])
 
   useEffect(() => {
@@ -156,15 +161,12 @@ export default function Garden() {
           xPos = "60%"
           yPos = "40%"
           break
-        case "soil":
-          xPos = "40%"
-          yPos = "70%"
-          break
-        case "fertilizer":
-          xPos = "55%"
-          yPos = "55%"
+        case "sun":
+          xPos = "50%"
+          yPos = "20%"
           break
       }
+      
 
       handRef.current.style.left = xPos
       handRef.current.style.top = yPos
@@ -188,15 +190,12 @@ export default function Garden() {
         newMessage = "Thank you! I was so thirsty!"
         growthAmount = 15
         break
-      case "soil":
-        newMessage = "Mmm, fresh soil helps my roots grow strong!"
+      case "sun":
+        newMessage = "Ahh, I love the sunshine! It helps me grow!"
         growthAmount = 20
         break
-      case "fertilizer":
-        newMessage = "Wow! I can feel myself getting stronger already!"
-        growthAmount = 25
-        break
     }
+    
 
     // Animate the tool use
     animateToolUse(selectedTool)
@@ -209,7 +208,7 @@ export default function Garden() {
     animateGrowth(growthAmount)
 
     // Add coins
-    setCoins((prev) => prev + 10)
+    setCoins((prev) => Math.max(0, prev - 10)) // Reduce by 10 coins
 
     // Reset selected tool
     setSelectedTool(null)
@@ -351,8 +350,9 @@ export default function Garden() {
               if (activity.id === "progress") {
                 router.push("/progressChart")
               }
-              // You can add more navigations for other icons if needed later
             }}
+            
+            
           >
             <span className="text-xl">{activity.emoji}</span>
           </button>
@@ -385,6 +385,24 @@ export default function Garden() {
           </Button>
         )}
       </div>
+      {showExercisePopup && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-xl shadow-md w-80 text-center">
+          <h2 className="text-lg font-semibold mb-4">Exercise Time!</h2>
+          <p className="mb-4">Do one of your exercises now! 💪</p>
+          <Button
+            className="bg-green-500 hover:bg-green-600 w-full"
+            onClick={() => {
+              setCoins(prev => prev + 40)
+              setShowExercisePopup(false)
+            }}
+          >
+            I Did It!
+          </Button>
+        </div>
+      </div>
+    )}
+
     </div>
   )
 }
