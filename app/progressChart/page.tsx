@@ -5,7 +5,9 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download } from "lucide-react";
+import { Download, Coins, ArrowLeft, Calendar, Activity, Clock, SunMedium } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation"
 
 // Define types for our data structure
 type DayData = {
@@ -66,6 +68,7 @@ type SummaryData = {
 
 export default function TherapyProgress() {
   const [timeView, setTimeView] = useState<TimeViewType>("weekly");
+  const [coins, setCoins] = useState(160);
   
   // Use type assertion to tell TypeScript that this access is valid
   const data = sampleData[timeView];
@@ -80,6 +83,7 @@ export default function TherapyProgress() {
       consistency: 0, 
       stress: 0 
     };
+   
     
     // Type safe reduction
     const sum = data.reduce((acc: typeof initialValues, item: DayData | WeekData) => {
@@ -160,13 +164,13 @@ export default function TherapyProgress() {
             <title>Therapy Progress Report - ${new Date().toLocaleDateString()}</title>
             <style>
               body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { text-align: center; color: #333; }
+              h1 { text-align: center; color: #16a34a; }
               .report-date { text-align: center; margin-bottom: 30px; color: #666; }
               table { width: 100%; border-collapse: collapse; margin: 20px 0; }
               th, td { padding: 10px; text-align: left; border: 1px solid #ddd; }
-              th { background-color: #f2f2f2; font-weight: bold; }
-              .summary { margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 4px; }
-              .summary h2 { margin-top: 0; }
+              th { background-color: #f0f9ff; font-weight: bold; }
+              .summary { margin: 20px 0; padding: 15px; background-color: #f0f9ff; border-radius: 8px; }
+              .summary h2 { margin-top: 0; color: #16a34a; }
               .footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #666; }
             </style>
           </head>
@@ -240,17 +244,39 @@ export default function TherapyProgress() {
   
   const averages = calculateAverages();
   const xAxisKey = timeView === "weekly" ? "day" : "week";
+  const router = useRouter()
+
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Psychotherapy Progress Tracking</h1>
-        
-        <div className="flex gap-2">
+    <div className="mobile-container w-full flex flex-col h-full">
+      {/* Top bar */}
+      <div className="flex justify-between items-center p-4 border-b w-full bg-white">
+        <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-green-800"
+          onClick={() => router.push("/game/garden")}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
+          <h1 className="text-lg font-bold text-green-800">My Progress</h1>
+        </div>
+        <div className="flex items-center gap-1">
+          <Coins className="h-5 w-5 text-yellow-500" />
+          <span className="font-bold">{coins}</span>
+        </div>
+      </div>
+      
+      {/* Main content area with gradient background */}
+      <div className="flex-1 overflow-auto bg-gradient-to-b from-sky-100 to-sky-50">
+          {/* Download options */}
+          <div className="p-4 space-y-3">
           <Button 
             onClick={exportToCSV}
             variant="outline"
-            className="flex items-center gap-2"
+            className="w-full bg-white flex items-center justify-center gap-2"
           >
             <Download size={16} />
             Export CSV
@@ -259,139 +285,134 @@ export default function TherapyProgress() {
           <Button 
             onClick={exportToPDF}
             variant="default"
-            className="flex items-center gap-2"
+            className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 mb-6"
           >
             <Download size={16} />
             Export PDF for Doctor
           </Button>
         </div>
-      </div>
-      
-      <div className="flex justify-center mb-8">
-        <Tabs defaultValue="weekly" className="w-full max-w-md" onValueChange={(value) => setTimeView(value as TimeViewType)}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="weekly">Weekly View</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly View</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Card>
+        {/* Time view selection */}
+        <div className="p-4 pb-2">
+          <Tabs defaultValue="weekly" className="w-full" onValueChange={(value) => setTimeView(value as TimeViewType)}>
+            <TabsList className="grid w-full grid-cols-2 bg-blue-100">
+              <TabsTrigger value="weekly" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                Weekly View
+              </TabsTrigger>
+              <TabsTrigger value="monthly" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                Monthly View
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 p-4">
+          <Card className="bg-white/80 border-none shadow-sm">
+            <CardContent className="p-4 flex flex-col items-center">
+              <div className="bg-purple-100 rounded-full p-3 mb-2">
+                <Clock className="h-6 w-6 text-purple-600" />
+              </div>
+              <p className="text-sm text-gray-600">Therapy Time</p>
+              <div className="text-xl font-bold">{averages.therapyMinutes} min</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white/80 border-none shadow-sm">
+            <CardContent className="p-4 flex flex-col items-center">
+              <div className="bg-blue-100 rounded-full p-3 mb-2">
+                <SunMedium className="h-6 w-6 text-blue-600" />
+              </div>
+              <p className="text-sm text-gray-600">Time Outside</p>
+              <div className="text-xl font-bold">{averages.outsideHours} hrs</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white/80 border-none shadow-sm">
+            <CardContent className="p-4 flex flex-col items-center">
+              <div className="bg-green-100 rounded-full p-3 mb-2">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+              <p className="text-sm text-gray-600">Steps</p>
+              <div className="text-xl font-bold">{averages.steps}</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white/80 border-none shadow-sm">
+            <CardContent className="p-4 flex flex-col items-center">
+              <div className="bg-yellow-100 rounded-full p-3 mb-2">
+                <Calendar className="h-6 w-6 text-yellow-600" />
+              </div>
+              <p className="text-sm text-gray-600">Consistency</p>
+              <div className="text-xl font-bold">{averages.consistency}/5</div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Mental Health Metrics */}
+        <Card className="m-4 bg-white/90 border-none shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Therapy Activity</CardTitle>
+            <CardTitle className="text-md text-center font-medium text-green-800">Mental Health Metrics</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{averages.therapyMinutes} min</div>
-            <p className="text-sm text-gray-500">Average per {timeView === "weekly" ? "day" : "week"}</p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey={xAxisKey} tick={{fontSize: 12}} />
+                  <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{fontSize: 12}} />
+                  <Tooltip contentStyle={{fontSize: '12px'}} />
+                  <Legend iconSize={10} wrapperStyle={{fontSize: '12px'}} />
+                  <Line type="monotone" dataKey="anxiety" name="Anxiety" stroke="#ff7300" strokeWidth={2} dot={{r: 4}} />
+                  <Line type="monotone" dataKey="stress" name="Stress" stroke="#ff0000" strokeWidth={2} dot={{r: 4}} />
+                  <Line type="monotone" dataKey="consistency" name="Consistency" stroke="#00b0ff" strokeWidth={2} dot={{r: 4}} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
+        {/* Activity Charts */}
+        <Card className="m-4 bg-white/90 border-none shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Time Outside</CardTitle>
+            <CardTitle className="text-md text-center font-medium text-green-800">Therapy Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{averages.outsideHours} hrs</div>
-            <p className="text-sm text-gray-500">Average per {timeView === "weekly" ? "day" : "week"}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Physical Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{averages.steps}</div>
-            <p className="text-sm text-gray-500">Average steps per {timeView === "weekly" ? "day" : "week"}</p>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Therapy Activity & Time Outside Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Therapy Persistence</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xAxisKey} />
-                  <YAxis label={{ value: 'Minutes', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Bar dataKey="therapyMinutes" name="Therapy Minutes" fill="#8884d8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey={xAxisKey} tick={{fontSize: 12}} />
+                  <YAxis tick={{fontSize: 12}} />
+                  <Tooltip contentStyle={{fontSize: '12px'}} />
+                  <Bar dataKey="therapyMinutes" name="Minutes" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Time Outside Home</CardTitle>
+        {/* Outside Time Chart */}
+        <Card className="m-4 bg-white/90 border-none shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-md text-center font-medium text-green-800">Time Outside</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey={xAxisKey} />
-                  <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Bar dataKey="outsideHours" name="Hours Outside" fill="#82ca9d" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey={xAxisKey} tick={{fontSize: 12}} />
+                  <YAxis tick={{fontSize: 12}} />
+                  <Tooltip contentStyle={{fontSize: '12px'}} />
+                  <Bar dataKey="outsideHours" name="Hours" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+        
+    
       </div>
-      
-      {/* Steps Chart */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle>Physical Activity (Steps)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="steps" name="Steps" fill="#4299e1" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Anxiety, Stress & Consistency Line Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mental Health Metrics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} />
-                <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="anxiety" name="Anxiety (0-5)" stroke="#ff7300" strokeWidth={2} />
-                <Line type="monotone" dataKey="stress" name="Stress (0-5)" stroke="#ff0000" strokeWidth={2} />
-                <Line type="monotone" dataKey="consistency" name="Consistency (0-5)" stroke="#00b0ff" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
