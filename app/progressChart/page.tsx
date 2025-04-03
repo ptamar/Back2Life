@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Coins, ArrowLeft, Calendar, Activity, Clock, SunMedium } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
+import { getCoins, addCoins } from "../utils/coins"; // Import coin utilities
 
 // Define types for our data structure
 type DayData = {
@@ -68,7 +69,27 @@ type SummaryData = {
 
 export default function TherapyProgress() {
   const [timeView, setTimeView] = useState<TimeViewType>("weekly");
-  const [coins, setCoins] = useState(160);
+  const [coins, setCoins] = useState(100); // Will be replaced with coins from utility
+  
+  // Load coins when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCoins(getCoins());
+    }
+  }, []);
+
+  // Set up refreshing of coins when the page gets focus
+  useEffect(() => {
+    const refreshCoins = () => {
+      setCoins(getCoins());
+    };
+
+    window.addEventListener('focus', refreshCoins);
+    
+    return () => {
+      window.removeEventListener('focus', refreshCoins);
+    };
+  }, []);
   
   // Use type assertion to tell TypeScript that this access is valid
   const data = sampleData[timeView];
@@ -141,6 +162,9 @@ export default function TherapyProgress() {
     // Trigger download and clean up
     link.click();
     document.body.removeChild(link);
+    
+    // Reward the user with coins for exporting data (if they haven't already)
+    rewardForExporting('csv');
   };
   
   // Function to generate and download PDF
@@ -236,16 +260,39 @@ export default function TherapyProgress() {
         printWindow.close();
       }, 250);
       
+      // Reward the user with coins for exporting data (if they haven't already)
+      rewardForExporting('pdf');
+      
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("There was an error generating the PDF. Please try again.");
     }
   };
   
+  // Function to reward users for exporting their data (once per format)
+  const rewardForExporting = (format: 'csv' | 'pdf') => {
+    // Get list of exported formats
+    const exportedFormats = JSON.parse(localStorage.getItem('exportedFormats') || '[]');
+    
+    // If this format hasn't been exported before, add coins
+    if (!exportedFormats.includes(format)) {
+      // Add 10 coins for each new export format
+      addCoins(10);
+      // Update local state
+      setCoins(getCoins());
+      
+      // Mark as exported
+      exportedFormats.push(format);
+      localStorage.setItem('exportedFormats', JSON.stringify(exportedFormats));
+      
+      // Show notification
+      alert(`Thank you for sharing your progress data! You've earned 10 coins 🌱`);
+    }
+  };
+  
   const averages = calculateAverages();
   const xAxisKey = timeView === "weekly" ? "day" : "week";
-  const router = useRouter()
-
+  const router = useRouter();
 
   return (
     <div className="mobile-container w-full flex flex-col h-full">
@@ -410,8 +457,6 @@ export default function TherapyProgress() {
             </div>
           </CardContent>
         </Card>
-        
-    
       </div>
     </div>
   );

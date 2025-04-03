@@ -1,4 +1,3 @@
-// app/game/garden/page.tsx
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -6,7 +5,9 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Coins, Droplets, Shovel, SproutIcon as Seedling } from "lucide-react"
 import { useRouter } from "next/navigation"
-import {  SproutIcon as  SunIcon } from "lucide-react"
+import { SproutIcon as SunIcon } from "lucide-react"
+import ExercisePopup from "@/components/ExercisePopup"
+import { getCoins, saveCoins, addCoins, spendCoins } from "../../utils/coins" // Import coin utilities
 
 
 // Plant growth stages with more proportional heights
@@ -49,7 +50,6 @@ const TOOLS = [
   { id: "sun", name: "Sun", icon: <SunIcon className="h-6 w-6" />, color: "bg-yellow-400" },
 ]
 
-
 // Activity circles
 const ACTIVITIES = [
   { id: "exercises", name: "Exercises", emoji: "💪", color: "bg-purple-400" },
@@ -65,24 +65,54 @@ export default function Garden() {
   const [growthStage, setGrowthStage] = useState(0)
   const [growthProgress, setGrowthProgress] = useState(0) // 0-100 for current stage
   const [plantHeight, setPlantHeight] = useState(GROWTH_STAGES[0].height)
-  const [coins, setCoins] = useState(100)
+  const [coins, setCoins] = useState(100) // Initial default value
   const [message, setMessage] = useState(GROWTH_STAGES[0].message)
   const [showMessage, setShowMessage] = useState(true)
-  const [selectedTool, setSelectedTool] = useState<string | null>(null)
+  const [selectedTool, setSelectedTool] = useState(null)
   const [isGrowing, setIsGrowing] = useState(false)
   const [showHand, setShowHand] = useState(false)
-  const handRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const handRef = useRef(null)
+  const containerRef = useRef(null)
   const [containerWidth, setContainerWidth] = useState(0)
   const [showExercisePopup, setShowExercisePopup] = useState(false)
+  const [gardeningActions, setGardeningActions] = useState(0)
 
   const router = useRouter()
 
-  
+  // Load coins when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCoins(getCoins());
+    }
+  }, []);
+
+  // Set up refreshing of coins when the page gets focus
+  useEffect(() => {
+    const refreshCoins = () => {
+      setCoins(getCoins());
+    };
+
+    window.addEventListener('focus', refreshCoins);
+    
+    return () => {
+      window.removeEventListener('focus', refreshCoins);
+    };
+  }, []);
+
   // This effect runs once after hydration
   useEffect(() => {
     setHydrated(true)
-    setShowExercisePopup(true)
+    
+    // Check if it's the first visit of the day
+    const lastVisitDate = localStorage.getItem('lastVisitDate')
+    const today = new Date().toDateString()
+    
+    if (lastVisitDate !== today) {
+      // First visit of the day, show exercise popup
+      setShowExercisePopup(true)
+      // Save today's date
+      localStorage.setItem('lastVisitDate', today)
+    }
   }, [])
 
   useEffect(() => {
@@ -109,12 +139,23 @@ export default function Garden() {
       return () => window.removeEventListener("resize", handleResize)
     }
   }, [])
+  
+  // Effect to check for showing exercise popup based on gardening actions
+  useEffect(() => {
+    if (gardeningActions > 0 && gardeningActions % 3 === 0) {
+      // 30% chance to show exercise popup after every 3 gardening actions
+      const randomChance = Math.random()
+      if (randomChance < 0.3) {
+        setShowExercisePopup(true)
+      }
+    }
+  }, [gardeningActions])
 
-  const handleToolSelect = (toolId: string) => {
+  const handleToolSelect = (toolId) => {
     setSelectedTool(toolId)
   }
 
-  const animateGrowth = (growthAmount: number) => {
+  const animateGrowth = (growthAmount) => {
     setIsGrowing(true)
 
     // Calculate new growth progress
@@ -148,7 +189,7 @@ export default function Garden() {
     }, 50)
   }
 
-  const animateToolUse = (toolId: string) => {
+  const animateToolUse = (toolId) => {
     setShowHand(true)
 
     // Position the hand based on the tool
@@ -167,7 +208,6 @@ export default function Garden() {
           break
       }
       
-
       handRef.current.style.left = xPos
       handRef.current.style.top = yPos
     }
@@ -196,7 +236,6 @@ export default function Garden() {
         break
     }
     
-
     // Animate the tool use
     animateToolUse(selectedTool)
 
@@ -207,8 +246,19 @@ export default function Garden() {
     // Animate growth
     animateGrowth(growthAmount)
 
-    // Add coins
-    setCoins((prev) => Math.max(0, prev - 10)) // Reduce by 10 coins
+    // Use coin utility to spend coins
+    if (spendCoins(10)) {
+      // Update local state with new coin balance
+      setCoins(getCoins())
+    } else {
+      // Not enough coins
+      setMessage("I need more coins to grow!")
+      setShowMessage(true)
+      setTimeout(() => {
+        setShowMessage(false)
+      }, 3000)
+      return
+    }
 
     // Reset selected tool
     setSelectedTool(null)
@@ -217,6 +267,34 @@ export default function Garden() {
     setTimeout(() => {
       setShowMessage(false)
     }, 3000)
+    
+    // Increment gardening actions counter
+    setGardeningActions(prev => prev + 1)
+  }
+
+  // Handle exercise completion
+  const handleExerciseComplete = () => {
+    setShowExercisePopup(false)
+    
+    // Use coin utility to add 40 coins
+    addCoins(40)
+    // Update local state with new coin balance
+    setCoins(getCoins())
+    
+    // Save the last exercise time
+    localStorage.setItem('lastExerciseTime', new Date().getTime().toString())
+    
+    // Show a message congratulating the user
+    setMessage("Great job on your exercise! You're helping me grow stronger!")
+    setShowMessage(true)
+    
+    // Hide message after delay
+    setTimeout(() => {
+      setShowMessage(false)
+    }, 4000)
+    
+    // Give the plant a growth boost
+    animateGrowth(25)
   }
 
   // Calculate responsive plant width based on container size
@@ -315,8 +393,6 @@ export default function Garden() {
             </div>
           </div>
 
-
-
           {/* Hand animation */}
           {showHand && (
             <div
@@ -329,14 +405,6 @@ export default function Garden() {
               </div>
             </div>
           )}
-
-          {/* Speech bubble
-          {showMessage && (
-            <div className="speech-bubble absolute top-0 left-0 right-0 mx-auto w-64 text-center bg-white p-2 rounded-lg shadow-md" style={{ transform: "translateY(-100%)", marginTop: "-10px" }}>
-              <p className="text-sm">{message}</p>
-              <div className="absolute left-1/2 bottom-0 w-4 h-4 bg-white transform rotate-45 translate-y-1/2 -translate-x-1/2"></div>
-            </div>
-          )} */}
         </div>
 
         {/* Activity circles */}
@@ -349,15 +417,20 @@ export default function Garden() {
             onClick={() => {
               if (activity.id === "progress") {
                 router.push("/progressChart")
+              } else if (activity.id === "community") {
+                router.push("/ResourcesPage")
+              } else if (activity.id === "exercises") {
+                setShowExercisePopup(true) // Show exercise popup when exercise button is clicked
+              } else if (activity.id === "achievements") {
+                router.push("/achievementsPage")
+              } else if (activity.id === "settings") {
+                router.push("/SettingsPage")
               }
             }}
-            
-            
           >
             <span className="text-xl">{activity.emoji}</span>
           </button>
         ))}
-
         </div>
       </div>
 
@@ -385,24 +458,14 @@ export default function Garden() {
           </Button>
         )}
       </div>
+      
+      {/* Exercise popup component */}
       {showExercisePopup && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-xl shadow-md w-80 text-center">
-          <h2 className="text-lg font-semibold mb-4">Exercise Time!</h2>
-          <p className="mb-4">Do one of your exercises now! 💪</p>
-          <Button
-            className="bg-green-500 hover:bg-green-600 w-full"
-            onClick={() => {
-              setCoins(prev => prev + 40)
-              setShowExercisePopup(false)
-            }}
-          >
-            I Did It!
-          </Button>
-        </div>
-      </div>
-    )}
-
+        <ExercisePopup 
+          onComplete={handleExerciseComplete} 
+          onClose={() => setShowExercisePopup(false)}
+        />
+      )}
     </div>
   )
 }
