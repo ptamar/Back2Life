@@ -82,6 +82,7 @@ export default function Garden() {
   // This effect runs once after hydration
   useEffect(() => {
     setHydrated(true)
+    setShowExercisePopup(true)
   }, [])
 
   useEffect(() => {
@@ -207,7 +208,7 @@ export default function Garden() {
     animateGrowth(growthAmount)
 
     // Add coins
-    setCoins((prev) => prev + 10)
+    setCoins((prev) => Math.max(0, prev - 10)) // Reduce by 10 coins
 
     // Reset selected tool
     setSelectedTool(null)
@@ -349,8 +350,9 @@ export default function Garden() {
               if (activity.id === "progress") {
                 router.push("/progressChart")
               }
-              // You can add more navigations for other icons if needed later
             }}
+            
+            
           >
             <span className="text-xl">{activity.emoji}</span>
           </button>
@@ -383,6 +385,24 @@ export default function Garden() {
           </Button>
         )}
       </div>
+      {showExercisePopup && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-xl shadow-md w-80 text-center">
+          <h2 className="text-lg font-semibold mb-4">Exercise Time!</h2>
+          <p className="mb-4">Do one of your exercises now! 💪</p>
+          <Button
+            className="bg-green-500 hover:bg-green-600 w-full"
+            onClick={() => {
+              setCoins(prev => prev + 40)
+              setShowExercisePopup(false)
+            }}
+          >
+            I Did It!
+          </Button>
+        </div>
+      </div>
+    )}
+
     </div>
   )
 }
