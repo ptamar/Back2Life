@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Coins, Droplets, Shovel, SproutIcon as Seedling } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 // Plant growth stages with more proportional heights
 const GROWTH_STAGES = [
@@ -70,6 +71,8 @@ export default function Garden() {
   const handRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const router = useRouter()
+
   
   // This effect runs once after hydration
   useEffect(() => {
@@ -338,15 +341,22 @@ export default function Garden() {
 
         {/* Activity circles */}
         <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3">
-          {ACTIVITIES.map((activity) => (
-            <button
-              key={activity.id}
-              className={`action-circle ${activity.color} text-white rounded-full w-10 h-10 flex items-center justify-center`}
-              aria-label={activity.name}
-            >
-              <span className="text-xl">{activity.emoji}</span>
-            </button>
-          ))}
+        {ACTIVITIES.map((activity) => (
+          <button
+            key={activity.id}
+            className={`action-circle ${activity.color} text-white rounded-full w-10 h-10 flex items-center justify-center`}
+            aria-label={activity.name}
+            onClick={() => {
+              if (activity.id === "progress") {
+                router.push("/progressChart")
+              }
+              // You can add more navigations for other icons if needed later
+            }}
+          >
+            <span className="text-xl">{activity.emoji}</span>
+          </button>
+        ))}
+
         </div>
       </div>
 
