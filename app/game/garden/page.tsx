@@ -5,37 +5,37 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Coins, Droplets, Shovel, SproutIcon as Seedling } from "lucide-react"
 
-// Plant growth stages
+// Plant growth stages with more proportional heights
 const GROWTH_STAGES = [
   {
     stage: 0,
-    image: "/images/plant-stage0.png",
+    image: "/images/plant-stage0-seed.png",
     message: "Hello! I'm so happy you're here to help me grow!",
-    height: 50,
+    height: 60,
   },
   {
     stage: 1,
-    image: "/images/plant-stage1.png",
+    image: "/images/plant-stage1-sprouting.png",
     message: "I can feel myself getting stronger with your help!",
-    height: 80,
+    height: 100,
   },
   {
     stage: 2,
-    image: "/images/plant-growth.png",
+    image: "/images/plant-stage2-leaves.png",
     message: "Look at my new leaves! Just like your progress in recovery!",
-    height: 120,
+    height: 150,
   },
   {
     stage: 3,
-    image: "/images/plant-growth.png",
+    image: "/images/plant-stage3-taller.png",
     message: "I'm growing so well! Your dedication is paying off!",
-    height: 160,
+    height: 200,
   },
   {
     stage: 4,
-    image: "/images/plant-growth.png",
+    image: "/images/plant-stage4-fullygrown.png",
     message: "I'm almost fully grown! Keep up the great work!",
-    height: 200,
+    height: 250,
   },
 ]
 
@@ -56,6 +56,8 @@ const ACTIVITIES = [
 ]
 
 export default function Garden() {
+  // Use null as initial state for client/server rendering compatibility
+  const [hydrated, setHydrated] = useState(false)
   const [growthStage, setGrowthStage] = useState(0)
   const [growthProgress, setGrowthProgress] = useState(0) // 0-100 for current stage
   const [plantHeight, setPlantHeight] = useState(GROWTH_STAGES[0].height)
@@ -66,6 +68,13 @@ export default function Garden() {
   const [isGrowing, setIsGrowing] = useState(false)
   const [showHand, setShowHand] = useState(false)
   const handRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+  
+  // This effect runs once after hydration
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   useEffect(() => {
     // Show initial message
@@ -74,6 +83,22 @@ export default function Garden() {
     }, 3000)
 
     return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    // Calculate container width for responsive sizing
+    if (typeof window !== 'undefined' && containerRef.current) {
+      setContainerWidth(containerRef.current.offsetWidth)
+    
+      const handleResize = () => {
+        if (containerRef.current) {
+          setContainerWidth(containerRef.current.offsetWidth)
+        }
+      }
+      
+      window.addEventListener("resize", handleResize)
+      return () => window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
   const handleToolSelect = (toolId: string) => {
@@ -191,8 +216,21 @@ export default function Garden() {
     }, 3000)
   }
 
+  // Calculate responsive plant width based on container size
+  const getPlantWidth = () => {
+    // Base width for small screens
+    const baseWidth = 160
+    
+    // Scale up proportionally for larger screens, but cap at a reasonable size
+    const responsiveWidth = typeof window !== 'undefined' 
+      ? Math.min(baseWidth * (containerWidth / 375), 200)
+      : baseWidth
+    
+    return responsiveWidth
+  }
+
   return (
-    <div className="mobile-container w-full flex flex-col">
+    <div className="mobile-container w-full flex flex-col h-full">
       {/* Top bar */}
       <div className="flex justify-between items-center p-4 border-b w-full">
         <div className="flex items-center gap-1">
@@ -206,48 +244,75 @@ export default function Garden() {
       </div>
 
       {/* Main garden area */}
-      <div className="flex-1 relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-sky-100 to-sky-50 w-full">
-        {/* Growth progress bar */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-3/4 bg-gray-200 rounded-full h-2.5">
-          <div
-            className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${growthProgress}%` }}
-          ></div>
-        </div>
-
-        {/* Growth stage indicator */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 flex gap-1">
-          {GROWTH_STAGES.map((_, index) => (
+      <div 
+        ref={containerRef}
+        className="flex-1 relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-sky-100 to-sky-50 w-full"
+      >
+        {/* Growth progress bar with level indicator */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-3/4 flex items-center">
+          <div className="mr-2 bg-green-600 text-white text-xs font-bold rounded-md px-2 py-1">
+            LV.{growthStage + 1}
+          </div>
+          <div className="flex-1 bg-gray-200 rounded-full h-2.5">
             <div
-              key={index}
-              className={`w-2 h-2 rounded-full ${index <= growthStage ? "bg-green-500" : "bg-gray-300"}`}
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${growthProgress}%` }}
             ></div>
-          ))}
+          </div>
         </div>
 
         {/* Plant container */}
-        <div className="relative mt-12 mb-4 flex items-end justify-center w-full">
-          {/* Pot */}
-          <div className="relative w-40 h-28 bg-amber-700 rounded-t-full overflow-hidden">
-            <div className="absolute bottom-0 w-full h-20 bg-amber-800 rounded-t-full"></div>
+        <div className="relative mt-16 mb-4 flex items-end justify-center w-full">
+          {/* Plant and pot container */}
+          <div className="relative flex flex-col items-center">
+          {showMessage && (
+            <div className="relative flex justify-center w-full mb-2">
+              <div className="speech-bubble relative w-64 text-center bg-white p-2 rounded-lg shadow-md">
+                <p className="text-sm">{message}</p>
+                {/* Tail of bubble */}
+                <div className="absolute left-1/2 bottom-0 w-4 h-4 bg-white transform rotate-45 translate-y-1/2 -translate-x-1/2 z-[-1]" />
+              </div>
+            </div>
+          )}
+
+            {/* Plant */}
+            <div
+              className={`transition-all duration-500 ease-out ${isGrowing ? "scale-110" : ""}`}
+              style={{
+                height: `${plantHeight}px`,
+                maxHeight: "60vh",
+                marginBottom: "-40px", // pull plant closer to pot
+                zIndex: 10
+              }}
+            >
+              <Image
+                src={GROWTH_STAGES[growthStage].image || "/placeholder.svg"}
+                alt="Plant"
+                width={getPlantWidth()}
+                height={plantHeight}
+                className="object-contain"
+                style={{
+                  height: `${plantHeight}px`,
+                  width: `${getPlantWidth()}px`,
+                  maxWidth: "100%"
+                }}
+                priority
+              />
+            </div>
+
+            {/* Pot */}
+            <div className="relative w-80 h-56 z-0">
+              <Image
+                src="/images/planter.png"
+                alt="Planter"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
 
-          {/* Plant */}
-          <div
-            className={`absolute bottom-16 left-1/2 transform -translate-x-1/2 transition-all duration-500 ease-out ${
-              isGrowing ? "scale-105" : ""
-            }`}
-            style={{ height: `${plantHeight}px` }}
-          >
-            <Image
-              src={GROWTH_STAGES[growthStage].image || "/placeholder.svg"}
-              alt="Plant"
-              width={200}
-              height={plantHeight}
-              className="object-contain"
-              style={{ height: `${plantHeight}px`, width: "auto" }}
-            />
-          </div>
+
 
           {/* Hand animation */}
           {showHand && (
@@ -262,12 +327,13 @@ export default function Garden() {
             </div>
           )}
 
-          {/* Speech bubble */}
+          {/* Speech bubble
           {showMessage && (
-            <div className="speech-bubble absolute -top-20 left-1/2 transform -translate-x-1/2 w-64 text-center">
+            <div className="speech-bubble absolute top-0 left-0 right-0 mx-auto w-64 text-center bg-white p-2 rounded-lg shadow-md" style={{ transform: "translateY(-100%)", marginTop: "-10px" }}>
               <p className="text-sm">{message}</p>
+              <div className="absolute left-1/2 bottom-0 w-4 h-4 bg-white transform rotate-45 translate-y-1/2 -translate-x-1/2"></div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Activity circles */}
@@ -275,7 +341,7 @@ export default function Garden() {
           {ACTIVITIES.map((activity) => (
             <button
               key={activity.id}
-              className={`action-circle ${activity.color} text-white`}
+              className={`action-circle ${activity.color} text-white rounded-full w-10 h-10 flex items-center justify-center`}
               aria-label={activity.name}
             >
               <span className="text-xl">{activity.emoji}</span>
@@ -311,4 +377,3 @@ export default function Garden() {
     </div>
   )
 }
-
