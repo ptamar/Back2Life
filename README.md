@@ -10,6 +10,8 @@ Back2Life is a mobile-first web application designed to make the rehabilitation 
 
 Developed during a 24-hour hackathon, this project aims to address the challenge of maintaining motivation during long-term rehabilitation by gamifying the recovery process.
 
+[Video of the app](https://drive.google.com/file/d/11NrC3eSNtyc_BfefytDpW9gNPW7sgi7o/view?usp=sharing) 
+
 ## ✨ Features
 
 ### Physical Rehabilitation
